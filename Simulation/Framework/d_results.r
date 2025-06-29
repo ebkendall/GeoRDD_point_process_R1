@@ -1,7 +1,7 @@
 test_stats <- function(gridPointValues, combinedMatchingSetupFix, w50) {
     
-    t_stat_df = data.frame("t_stat" = c(-1),
-                           "naive_pval" = c(-1))
+    t_stat_df = data.frame("t_stat" = rep(0, length(w50)),
+                           "naive_pval" = rep(0, length(w50)))
     
     rowInd = 1
     
@@ -148,6 +148,9 @@ for(trialNum in 1:1000) {
                 print("Incorrect input to start")
             }
             
+            # # Uncomment the next line for power analysis testing lower sample sizes 
+            # gridPointValues = 0.5 * gridPointValues 
+
             n_matches = 2000
             
             # Theta --------------------------------------------------------------------
@@ -170,46 +173,35 @@ for(trialNum in 1:1000) {
                 counter = counter + 1
             }
             
-            m_theta = 0.99 # initialize measure of similarity
-            store_theta = NULL
-            repeat {
-                total_match = rep(0, nrow(X_theta))
-                store_theta = matrix(NA, nrow = length(indexList_MAIN), ncol = n_matches)
-                ind_keep_theta = NULL
+            m_theta = 0.95 # measure of similarity
+
+            total_match = rep(0, nrow(X_theta))
+            store_theta = matrix(NA, nrow = length(indexList_MAIN), ncol = n_matches)
+            ind_keep_theta = NULL
+            
+            for(ii in 1:nrow(X_theta)) {
+                off_temp = X_theta[ii,2]
+                ratio_temp = X_theta[ii,1]
                 
-                for(ii in 1:nrow(X_theta)) {
-                    off_temp = X_theta[ii,2]
-                    ratio_temp = X_theta[ii,1]
-                    
-                    w1 = which((combinedMatchingSetupFix2$DATA$area1 + 
-                                    combinedMatchingSetupFix2$DATA$area2) > m_theta*off_temp &
-                                   (combinedMatchingSetupFix2$DATA$area1 + 
-                                        combinedMatchingSetupFix2$DATA$area2) < (1/m_theta)*off_temp)
-                    
-                    w2 = which(rat_off > m_theta*ratio_temp &
-                                   rat_off < (1/m_theta)*ratio_temp)
-                    
-                    wAll = intersect(w1, w2)
-                    
-                    total_match[ii] = length(wAll)
-                    
-                    if (length(wAll) > 10) {
-                        tStats_temp = test_stats(gridPointValues, combinedMatchingSetupFix2, wAll)
-                        testStatsNULL = tStats_temp$t_stat
-                        testStatsNULL = testStatsNULL[which(testStatsNULL > 0)]
-                        store_theta[ii,] = sample(testStatsNULL, n_matches, replace=TRUE)
-                        ind_keep_theta = c(ind_keep_theta, ii)
-                    } 
-                }
+                w1 = which((combinedMatchingSetupFix2$DATA$area1 + 
+                                combinedMatchingSetupFix2$DATA$area2) > m_theta*off_temp &
+                                (combinedMatchingSetupFix2$DATA$area1 + 
+                                    combinedMatchingSetupFix2$DATA$area2) < (1/m_theta)*off_temp)
                 
-                if(summary(total_match)[2] > 10) {
-                    break
-                } else {
-                    print("Need more matches (theta)!")
-                    print(paste0("Current perc = ", m_theta))
-                    print(summary(total_match))
-                    m_theta = m_theta - 0.01
-                }
+                w2 = which(rat_off > m_theta*ratio_temp &
+                                rat_off < (1/m_theta)*ratio_temp)
+                
+                wAll = intersect(w1, w2)
+                
+                total_match[ii] = length(wAll)
+                
+                if (length(wAll) > 10) {
+                    tStats_temp = test_stats(gridPointValues, combinedMatchingSetupFix2, wAll)
+                    testStatsNULL = tStats_temp$t_stat
+                    testStatsNULL = testStatsNULL[which(testStatsNULL > 0)]
+                    store_theta[ii,] = sample(testStatsNULL, n_matches, replace=TRUE)
+                    ind_keep_theta = c(ind_keep_theta, ii)
+                } 
             }
             
             for (jj in 1:nrow(X_theta)) {

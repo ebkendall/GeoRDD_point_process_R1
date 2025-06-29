@@ -19,8 +19,8 @@ colnames(global_results) = c("max", "mean")
 global_null_plot = matrix(nrow = n_matches, ncol = 2)
 global_obs_plot = rep(NA, 2)
 
-m_theta = 0.65 # match_count_list[["theta"]][k]
-m_tau = 0.9# match_count_list[["tau"]][kk] # 0.96
+m_theta = 0.65 
+m_tau = 0.9
 
 for(k in 1:n_buff_width) {
 
@@ -126,19 +126,6 @@ for(k in 1:n_buff_width) {
         total_match[ii] = length(wAll)
         
         if (length(wAll) > 10) {
-            # if(length(wAll) > 500) {
-            #     # Use Mahalanobis distance to find closest 500
-            #     null_sum_ii = null_sum[wAll]
-            #     null_ratio_ii = null_ratio[wAll]
-            #     v1_ii = sd(null_sum_ii, na.rm = T)^2
-            #     v2_ii = sd(null_ratio_ii, na.rm = T)^2
-            #     dist_temp = sqrt(((off_temp - null_sum_ii)^2/v1_ii) + ((ratio_temp - null_ratio_ii)^2 / v2_ii))
-            #     new_wAll = wAll[order(dist_temp)[1:500]]
-            #     
-            #     testStatsNULL = t_stat[new_wAll]
-            # } else {
-            #     testStatsNULL = t_stat[wAll]    
-            # }
             testStatsNULL = t_stat[wAll] 
             testStatsNULL = testStatsNULL[which(testStatsNULL > 0)]
             store_theta[ii,] = sample(testStatsNULL, n_matches, replace=TRUE)
@@ -213,21 +200,6 @@ for(k in 1:n_buff_width) {
                 total_match[ii] = length(wAll)
                 
                 if (length(wAll) > 10) {
-                    # if(length(wAll) > 500) {
-                    #     # Use Mahalanobis distance to find closest 500
-                    #     null_sum_ii = null_sum[wAll]
-                    #     null_ratio_ii = null_ratio[wAll]
-                    #     v1_ii = sd(null_sum_ii, na.rm = T)^2
-                    #     v2_ii = sd(null_ratio_ii, na.rm = T)^2
-                    #     dist_temp = sqrt(((off_temp - null_sum_ii)^2/v1_ii) + ((ratio_temp - null_ratio_ii)^2 / v2_ii))
-                    #     new_wAll = wAll[order(dist_temp)[1:500]]
-                    #     
-                    #     testStatsNULL = abs(t_stat_int_surface[new_wAll, 3*kk-2] / t_stat_off_surface[new_wAll, 3*kk-2]
-                    #                         - t_stat_int_surface[new_wAll, 3*kk-1] / t_stat_off_surface[new_wAll, 3*kk-1])
-                    # } else {
-                    #     testStatsNULL = abs(t_stat_int_surface[wAll, 3*kk-2] / t_stat_off_surface[wAll, 3*kk-2]
-                    #                         - t_stat_int_surface[wAll, 3*kk-1] / t_stat_off_surface[wAll, 3*kk-1])  
-                    # }
                     testStatsNULL = abs(t_stat_int_surface[wAll, 3*kk-2] / t_stat_off_surface[wAll, 3*kk-2]
                                         - t_stat_int_surface[wAll, 3*kk-1] / t_stat_off_surface[wAll, 3*kk-1])
                     testStatsNULL = testStatsNULL[which(testStatsNULL > 0)]
@@ -475,7 +447,7 @@ ggsave(filename = "../Plots/realData_tau_global_hist.png",
 load(paste0('../Output/nullGridInfo/combinedMatchingSetup', 4, ".dat"))
 load(paste0('../Output/origGridInfo/origData_', 4, '.dat'))
 
-## Now remove data points where these ratios are much different
+# Now remove data points where these ratios are much different
 area_ratio = c(na.omit(origData$str_info$area1 / origData$str_info$area2))
 area_ratio[area_ratio < 1] = 1 / area_ratio[area_ratio < 1]
 wMax_a = max(area_ratio)
@@ -514,12 +486,16 @@ tot_off = combinedMatchingSetupFix2$n_off_1 + combinedMatchingSetupFix2$n_off_2
 t_stat_plot_list = vector(mode = 'list', length = length(adjust_val))
 var_stat_plot_list = vector(mode = 'list', length = length(adjust_val))
 
-ratio_breaks = seq(0, 60, 6)
-sum_breaks   = seq(1200, 0, -60)
+ratio_breaks = seq(from = quantile(rat_off, probs = 0.10), to = quantile(rat_off, probs = 0.90), 
+                   length.out = 15)
+sum_breaks   = seq(from = quantile(tot_off, probs = 0.90), to = quantile(tot_off, probs = 0.10), 
+                   length.out = 15)
 c_name = NULL
 r_name = NULL
-for(i in 2:length(ratio_breaks)) r_name = c(r_name, paste0(ratio_breaks[i-1], "-", ratio_breaks[i]))
-for(i in 2:length(sum_breaks)) c_name = c(c_name, paste0(sum_breaks[i], "-", sum_breaks[i-1]))
+for(i in 2:length(ratio_breaks)) r_name = c(r_name, paste0(round(ratio_breaks[i-1], digits = 3), 
+                                                           "-", round(ratio_breaks[i], digits = 3)))
+for(i in 2:length(sum_breaks)) c_name = c(c_name, paste0(round(sum_breaks[i-1], digits = 1),
+                                                         "-", round(sum_breaks[i], digits = 1)))
 
 for(k in 1:length(adjust_val)) {
     t_stat_new = log(abs(int_surface_info[, 3*k-2] / off_surface_info[, 3*k-2]
@@ -653,4 +629,3 @@ app3 = ggarrange(t_stat_plot_list_gg[[1]] +
                  nrow = 3, ncol = 4)
 
 ggsave(filename = "../Plots/realData_tau_appendix.pdf", plot = app3, width=11, height=8.5)
-
